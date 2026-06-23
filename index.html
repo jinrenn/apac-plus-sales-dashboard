@@ -1485,7 +1485,6 @@ function toggleCountryDrilldown(ctry) {
   const container = document.getElementById('country-drilldown');
   if(container.getAttribute('data-open')===ctry) {
     container.innerHTML=''; container.setAttribute('data-open','');
-    // 표 행 화살표 복원
     document.querySelectorAll('#country-table tr').forEach(tr=>{
       const td = tr.querySelector('td');
       if(td && td.textContent.includes(ctry)) td.innerHTML = td.innerHTML.replace('▼','▶');
@@ -1494,13 +1493,19 @@ function toggleCountryDrilldown(ctry) {
   }
   container.setAttribute('data-open', ctry);
 
-  // 표 행 화살표 변경
   document.querySelectorAll('#country-table tr').forEach(tr=>{
     const td = tr.querySelector('td');
     if(td && td.textContent.includes(ctry)) td.innerHTML = td.innerHTML.replace('▶','▼');
   });
 
-  // 브랜드 순서: 성분에디터 → 밀크터치 → 마미케어 → 나머지
+  // 브랜드별 색 (디자인용 — 값/계산엔 영향 없음). 채도 낮춘 톤.
+  const BRAND_THEME = {
+    '성분에디터': {dot:'#4ECDA0', bar:'#4ECDA0', line:'#D4EFE4', head:'var(--text)'},
+    '밀크터치':   {dot:'#EA8BB8', bar:'#EA8BB8', line:'#F7DEEA', head:'var(--text)'},
+    '마미케어':   {dot:'#BBB5AB', bar:'#BBB5AB', line:'#E8E5DF', head:'var(--text)'}
+  };
+  const DEFAULT_THEME = {dot:'#9A9892', bar:'#9A9892', line:'var(--border)', head:'var(--text)'};
+
   const BRAND_ORDER = ['성분에디터','밀크터치','마미케어'];
   const clients = (d.clients||[]).filter(c=>c.country===ctry);
   const sorted = [...clients].sort((a,b)=>{
@@ -1509,64 +1514,81 @@ function toggleCountryDrilldown(ctry) {
     return (ai===-1?99:ai) - (bi===-1?99:bi);
   });
 
-  const clientCards = sorted.map(c => {
+  // 거래처 카드 한 장 (값·막대·마커 로직은 기존 그대로 보존)
+  const renderCard = (c, theme, isLast) => {
     const kpi    = c.kpi;
     const finTgt = c.finTgt;
     const actual = c.margin;
     const mktBgt = c.mktBgt;
     const hasMktBgt = mktBgt!=null && mktBgt>0;
-    const isMissing = actual!=null && kpi!=null && actual < kpi;
 
     const maxVal = Math.max(finTgt||0, kpi||0, actual!=null?Math.abs(actual):0, 0.8);
     const actPct  = actual!=null ? Math.max(0, Math.min(100, actual/maxVal*100)) : 0;
     const kpiPct  = kpi!=null    ? Math.min(100, kpi/maxVal*100)    : null;
     const finPct  = finTgt!=null ? Math.min(100, finTgt/maxVal*100) : null;
-    const barColor = actual==null ? '#d5d5d5' : actual<0 ? '#e74c3c' : actual>=(finTgt||kpi||0) ? '#00d98e' : actual>=(kpi||0) ? '#9bd16a' : '#f5b800';
-    const badgeClass = actual==null?'b-blue':actual<0?'b-red':actual>=(finTgt||kpi||0)?'b-green':actual>=(kpi||0)?'b-green':'b-yellow';
+    const barColor = actual==null ? '#d5d5d5' : theme.bar;
 
-    // 마케팅예산 반영 구간 (KPI ~ 최종목표) 음영 — 마케팅예산 있을 때만
     const mktBand = (hasMktBgt && kpiPct!=null && finPct!=null) ? `
-        <div style="position:absolute;left:${Math.min(kpiPct,finPct)}%;top:0;height:100%;width:${Math.abs(finPct-kpiPct)}%;background:repeating-linear-gradient(45deg,rgba(168,85,247,.18),rgba(168,85,247,.18) 4px,rgba(168,85,247,.32) 4px,rgba(168,85,247,.32) 8px)"></div>` : '';
+        <div style="position:absolute;left:${Math.min(kpiPct,finPct)}%;top:0;height:100%;width:${Math.abs(finPct-kpiPct)}%;background:repeating-linear-gradient(45deg,rgba(168,85,247,.16),rgba(168,85,247,.16) 4px,rgba(168,85,247,.28) 4px,rgba(168,85,247,.28) 8px)"></div>` : '';
 
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;${isMissing?'border-left:3px solid #e74c3c':''}">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:700">${c.client}</span>
-        <span style="font-size:10px;color:var(--muted);background:var(--surface2);padding:2px 7px;border-radius:4px">${c.brand} · ${ctry}</span>
+    return `<div style="padding:11px 0;${isLast?'':'border-bottom:1px solid var(--border)'}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px">
+        <span style="font-size:13px;font-weight:500">${c.client}</span>
         <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">Target ${fmt(c.target)} · YTD ${fmt(c.ytd)}</span>
       </div>
-
-      
       ${kpi!=null || actual!=null ? `
-      <div style="position:relative;height:22px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);overflow:hidden">
+      <div style="position:relative;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
         ${mktBand}
-        <div style="position:absolute;left:0;top:0;height:100%;width:${actPct}%;background:${barColor};border-radius:6px;opacity:.9"></div>
+        <div style="position:absolute;left:0;top:0;height:100%;width:${actPct}%;background:${barColor};border-radius:4px"></div>
       </div>
-      <div style="position:relative;height:36px;margin-top:1px">
+      <div style="position:relative;height:30px;margin-top:1px">
         ${kpiPct!=null?`
           <div style="position:absolute;left:${kpiPct}%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
-            <div style="width:2px;height:6px;background:#2b7de9"></div>
+            <div style="width:1px;height:5px;background:#2b7de9"></div>
             <span style="font-size:9px;color:#2b7de9;white-space:nowrap;margin-top:1px">전사목표 ${pct(kpi)}</span>
           </div>` : ''}
         ${finPct!=null?`
-          <div style="position:absolute;left:${finPct}%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;top:${(kpiPct!=null&&Math.abs(finPct-kpiPct)<12)?'14px':'0'}">
+          <div style="position:absolute;left:${finPct}%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;top:${(kpiPct!=null&&Math.abs(finPct-kpiPct)<12)?'13px':'0'}">
             <span style="font-size:9px;color:#e74c3c;white-space:nowrap;margin-top:1px">운영목표 ${pct(finTgt)}</span>
           </div>` : ''}
       </div>
-      <div style="display:flex;gap:12px;margin-top:5px;font-size:10px;flex-wrap:wrap;align-items:center">
-        <span style="color:${barColor};font-weight:700">● 실적 공헌이익율 ${pct(actual)}</span>
-        ${kpi!=null?`<span style="color:#2b7de9">| 전사 목표 공헌이익율 ${pct(kpi)}</span>`:''}
-        ${hasMktBgt?`<span style="color:#a855f7">| 마케팅예산 ${fmt(mktBgt,'만')}원</span>`:`<span style="color:var(--muted)">| 마케팅예산 없음</span>`}
-        ${finTgt!=null?`<span style="color:#e74c3c">| 운영 목표 공헌이익율 ${pct(finTgt)}</span>`:''}
-      </div>` : '<div style="font-size:11px;color:var(--muted);padding:4px 0">목표 미설정</div>'}
+      <div style="display:flex;gap:10px;margin-top:3px;font-size:10px;flex-wrap:wrap;align-items:center;color:var(--muted)">
+        <span style="color:${barColor};font-weight:500">실적 공헌이익율 ${pct(actual)}</span>
+        ${kpi!=null?`<span>· 전사 ${pct(kpi)}</span>`:''}
+        ${finTgt!=null?`<span>· 운영 ${pct(finTgt)}</span>`:''}
+        ${hasMktBgt?`<span style="color:#a855f7">· 마케팅예산 ${fmt(mktBgt,'만')}원</span>`:`<span>· 마케팅예산 없음</span>`}
+      </div>` : '<div style="font-size:11px;color:var(--muted);padding:2px 0">목표 미설정</div>'}
+    </div>`;
+  };
+
+  // 브랜드별 그룹: 헤더 + 가는 왼쪽 라인으로 묶기
+  const brandsInOrder = BRAND_ORDER.concat(
+    sorted.map(c=>c.brand).filter(b=>!BRAND_ORDER.includes(b))
+  ).filter((b,i,arr)=>arr.indexOf(b)===i);
+
+  const groupsHtml = brandsInOrder.map(brand => {
+    const members = sorted.filter(c=>c.brand===brand);
+    if(!members.length) return '';
+    const theme = BRAND_THEME[brand] || DEFAULT_THEME;
+    const ytdSum = members.reduce((s,c)=>s+(c.ytd||0),0);
+    const cards = members.map((c,i)=>renderCard(c, theme, i===members.length-1)).join('');
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;padding-bottom:7px;border-bottom:1px solid var(--border)">
+        <span style="width:7px;height:7px;border-radius:50%;background:${theme.dot}"></span>
+        <span style="font-size:12px;font-weight:500;letter-spacing:.3px;color:${theme.head}">${brand}</span>
+        <span style="font-size:11px;color:var(--muted)">${members.length}개 거래처</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">YTD ${fmt(ytdSum)}</span>
+      </div>
+      <div style="border-left:2px solid ${theme.line};padding-left:16px">${cards}</div>
     </div>`;
   }).join('');
 
   container.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:0 0 10px 10px;padding:14px 16px 16px;margin-top:-4px">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:0 0 10px 10px;padding:16px 18px 10px;margin-top:-4px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px">
         ${FLAGS[ctry]||''} ${ctry} — 거래처별 공헌이익율 달성 현황
       </div>
-      ${clientCards}
+      ${groupsHtml}
     </div>`;
 }
 
