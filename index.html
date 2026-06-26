@@ -1545,19 +1545,22 @@ function toggleCountryDrilldown(ctry) {
         <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">Target ${fmt(c.target)} · YTD ${fmt(c.ytd)}</span>
       </div>
       ${kpi!=null || actual!=null ? `
-      <div style="position:relative;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
-        ${mktBand}
-        <div style="position:absolute;left:0;top:0;height:100%;width:${actPct}%;background:${barColor};border-radius:4px"></div>
+      <div style="position:relative;height:8px;background:var(--surface2);border-radius:4px">
+        <div style="position:absolute;left:0;top:0;height:100%;width:100%;border-radius:4px;overflow:hidden">
+          ${mktBand}
+          <div style="position:absolute;left:0;top:0;height:100%;width:${actPct}%;background:${barColor};border-radius:4px"></div>
+        </div>
+        ${kpiPct!=null?`<div style="position:absolute;left:${kpiPct}%;top:-3px;height:14px;width:2px;background:#2b7de9;transform:translateX(-50%);z-index:3"></div>` : ''}
+        ${finPct!=null?`<div style="position:absolute;left:${finPct}%;top:-3px;height:14px;width:2px;background:#e74c3c;transform:translateX(-50%);z-index:3"></div>` : ''}
       </div>
-      <div style="position:relative;height:30px;margin-top:1px">
+      <div style="position:relative;height:26px;margin-top:3px">
         ${kpiPct!=null?`
-          <div style="position:absolute;left:${kpiPct}%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
-            <div style="width:1px;height:5px;background:#2b7de9"></div>
-            <span style="font-size:9px;color:#2b7de9;white-space:nowrap;margin-top:1px">전사목표 ${pct(kpi)}</span>
+          <div style="position:absolute;left:${kpiPct}%;transform:translateX(-50%);text-align:center">
+            <span style="font-size:9px;color:#2b7de9;white-space:nowrap">전사목표 ${pct(kpi)}</span>
           </div>` : ''}
         ${finPct!=null?`
-          <div style="position:absolute;left:${finPct}%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;top:${(kpiPct!=null&&Math.abs(finPct-kpiPct)<12)?'13px':'0'}">
-            <span style="font-size:9px;color:#e74c3c;white-space:nowrap;margin-top:1px">운영목표 ${pct(finTgt)}</span>
+          <div style="position:absolute;left:${finPct}%;transform:translateX(-50%);text-align:center;top:11px">
+            <span style="font-size:9px;color:#e74c3c;white-space:nowrap">운영목표 ${pct(finTgt)}</span>
           </div>` : ''}
       </div>
       <div style="display:flex;gap:10px;margin-top:3px;font-size:10px;flex-wrap:wrap;align-items:center;color:var(--muted)">
