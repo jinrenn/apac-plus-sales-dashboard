@@ -253,6 +253,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
     <button class="tab" onclick="showPage('india',this)">🇮🇳 인도</button>
     <button class="tab" onclick="showPage('australia',this)">🇦🇺 호주</button>
     <button class="tab" onclick="showPage('mongolia',this)">🇲🇳 몽골</button>
+    <button class="tab" onclick="showPage('kol',this)">🌱 KOL Seeding</button>
   </div>
 
   <!-- ── PAGE: OVERVIEW ─────────────────────────────────── -->
@@ -489,6 +490,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:16p
         <tbody id="mng-table"></tbody>
       </table>
     </div>
+  </div>
+
+<!-- ── PAGE: KOL SEEDING ───────────────────────────────── -->
+  <div id="page-kol" class="page">
+    <iframe src="KOL_dashboard.html"
+            style="width:100%;min-height:1400px;border:none;border-radius:12px;background:#fff"
+            title="KOL Seeding Dashboard"></iframe>
   </div>
 
 </div><!-- /container -->
